@@ -13,6 +13,7 @@ Features:
 * Can target VHDL, Verilog, SystemVerilog
 
 To generate an HDL:
+
     clash --<HDL name> Adapter.hs
 
 Adapter.hs is a file that converts my ADTs into simpler wire types 
@@ -20,6 +21,7 @@ Adapter.hs is a file that converts my ADTs into simpler wire types
 away the debug port.
 
 To simulate CPU:
+
     clash Main.hs
     ./Main
 
