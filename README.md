@@ -14,7 +14,7 @@ Features:
 
 To generate an HDL:
 
-    clash --<HDL name> Adapter.hs
+    clash --<HDL name> CPU/Adapter.hs
 
 Adapter.hs is a file that converts my ADTs into simpler wire types 
 (not strictly necessary, but makes things a bit clearer) and throws
