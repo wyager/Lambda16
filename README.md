@@ -6,8 +6,8 @@ Features:
 * 4-stage pipeline (Fetch, Decode, Wait, Writeback)
 * Flexible microcode rewriting (to support Ldr)
 * Dynamic opportunistic instruction rewriting
-(e.g. "Add a b c" becomes "Mov (r[a] + r[b]) c" as soon as r[a] and r[b] are known)
-* Opportunistic jumping (jmp happens immediately, jeq happens when r[a] and r[b] are known)
+(e.g. `Add a b c` becomes `Mov (r[a] + r[b]) c` as soon as `r[a]` and `r[b]` are known)
+* Opportunistic jumping (`Jmp` happens immediately, `Jeq` happens when `r[a]` and `r[b]` are known)
 * Fully associative memory and register write caches (size tunable by type parameter, default 8)
 * Fully simulatable without ever generating an HDL
 * Can target VHDL, Verilog, SystemVerilog
