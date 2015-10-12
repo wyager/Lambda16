@@ -4,7 +4,7 @@ The CPU is defined in CPU/CPU.hs.
 
 Features:
 * 4-stage pipeline (Fetch, Decode, Wait, Writeback)
-* Flexible microcode rewriting (to support Ldr)
+* Flexible microcode rewriting (to support the `Ldr` instruction, which has both RAM and register dependencies)
 * Dynamic opportunistic instruction rewriting
 (e.g. `Add a b c` becomes `Mov (r[a] + r[b]) c` as soon as `r[a]` and `r[b]` are known)
 * Opportunistic jumping (`Jmp` happens immediately, `Jeq` happens when `r[a]` and `r[b]` are known)
