@@ -8,7 +8,7 @@ Features:
 * Dynamic opportunistic instruction rewriting
 (e.g. `Add a b c` becomes `Mov (r[a] + r[b]) c` as soon as `r[a]` and `r[b]` are known)
 * Opportunistic jumping (`Jmp` happens immediately, `Jeq` happens when `r[a]` and `r[b]` are known)
-* Fully associative memory and register write caches (size tunable by type parameter, default 8)
+* Fully associative LRU memory and register write caches (size tunable by type parameter, default 8)
 * Fully simulatable without ever generating an HDL
 * Can target VHDL, Verilog, SystemVerilog
 
