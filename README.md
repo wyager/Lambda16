@@ -1,4 +1,4 @@
-This is my Cλash/Haskell implementation of a microprocessor for UT's 350C Advanced Architecture class.
+This is my Cλash/Haskell implementation of a microprocessor for UT's CS 350C Advanced Architecture class.
 
 The CPU is defined in CPU/CPU.hs.
 
