@@ -4,10 +4,10 @@ import CLaSH.Prelude hiding (lookup)
 import CPU.Defs (Reg, Addr(..), W(..), Jump(..))
 import CPU.Hazard.Hazard (hazard, opRegReads, opRegWrites, regConflict, opMemReads, opMemWrites, memConflict)
 import CPU.Ops(Op(..))
-import CPU.Cache.Cache (Cache, lookup)
+import CPU.Cache.WriteCache (WriteCache, lookup)
 
 -- Only rewrites Ldrs. This lets us sometimes avoid having to use microcode
-microfetchRewrite :: KnownNat n => Op -> Cache n Reg -> Op
+microfetchRewrite :: KnownNat n => Op -> WriteCache n Reg -> Op
 microfetchRewrite (Ldr a b t) cached = case (lookup cached a, lookup cached b) of
     (Just av, Just bv) -> Ld (Addr $ w av + w bv) t
     _                  -> Ldr a b t
@@ -20,7 +20,7 @@ ldr2Rewrite writebackOp op = case op of
         -- Something is horribly wrong if writebackOp isn't an Ldr1Lit
     otherOp  -> otherOp
 
-generalRewrite :: (KnownNat m, KnownNat n) => Cache m Addr -> Cache n Reg -> Op -> Op
+generalRewrite :: (KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Op -> Op
 generalRewrite mem_cached cached op = case op of
     Add r1 r2 r3     -> case (lookup cached r1, lookup cached r2) of
         (Just a, Just b) -> Mov (a+b) r3
@@ -54,13 +54,13 @@ jmpRewrite (Jump pc) _     = (Jump pc, Nop)
 jmpRewrite NoJump (Jmp pc) = (Jump pc, Nop)
 jmpRewrite NoJump op       = (NoJump,  op)
 
-decodeRewrite :: (KnownNat m, KnownNat n) => Op -> Op -> Cache m Addr -> Cache n Reg -> Jump -> Op -> (Bool, Jump, Op)
+decodeRewrite :: (KnownNat m, KnownNat n) => Op -> Op -> WriteCache m Addr -> WriteCache n Reg -> Jump -> Op -> (Bool, Jump, Op)
 decodeRewrite waitOp writebackOp mem_cache cache jump op = (stall, jump', op'')
     where 
     (jump', op')  = jmpRewrite jump . generalRewrite mem_cache cache . ldr2Rewrite writebackOp $ op
     (op'', stall) = stallRewrite waitOp writebackOp op'
 
-waitRewrite :: (KnownNat m, KnownNat n) => Cache m Addr -> Cache n Reg -> Jump -> Op -> (Jump, Op)
+waitRewrite :: (KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Jump -> Op -> (Jump, Op)
 waitRewrite mem_cache cache jump = jmpRewrite jump . generalRewrite mem_cache cache
 
 -- We then also need to deal with the writeback result

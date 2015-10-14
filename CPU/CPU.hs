@@ -8,7 +8,7 @@ import CPU.Rewrite.RewriteBlocks (decodeRewrite, waitRewrite, writebackRewrite)
 import CPU.Detector.ReadBlocks (memReadBlock, regReadBlock)
 import CPU.Detector.WriteBlocks (memWritebackBlock, regWritebackBlock)
 import CPU.Detector.HaltBlock (haltBlock)
-import CPU.Cache.Cache (Cache)
+import CPU.Cache.WriteCache (WriteCache)
 import CPU.Cache.CacheBlocks (record, also, regWrites, memWrites)
 import CPU.Detector.SanityBlock (Sanity(..), decodeSanity, waitSanity, writebackSanity)
 import CPU.Simulation.Pipeline (Pipeline(..))
@@ -16,7 +16,7 @@ import CPU.Hazard.SelfModifying (selfModifying)
 
 import Data.Monoid (Monoid, (<>))
 
-type Debug = (Sanity, Pipeline, Cache 8 Reg, Cache 8 Reg, Cache 8 Reg)
+type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg)
 
 
 -- Roughly speaking:
@@ -46,11 +46,11 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
 
     decode_cache = also regWrites wait_op wait_cache
     wait_cache = also regWrites writeback_op cache
-    cache = record regWrites writeback_op :: S (Cache 8 Reg)
+    cache = record regWrites writeback_op :: S (WriteCache 8 Reg)
 
     decode_mem_cache = also memWrites wait_op wait_mem_cache
     wait_mem_cache = also memWrites writeback_op mem_cache
-    mem_cache = record memWrites writeback_op :: S (Cache 8 Addr)
+    mem_cache = record memWrites writeback_op :: S (WriteCache 8 Addr)
 
     sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
 
