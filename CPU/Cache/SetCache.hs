@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module CPU.SetCache (updateWithKey, update, empty, insert, lookup, delete) where
+module CPU.Cache.SetCache (SetCache, updateWithKey, update, empty, insert, lookup, delete) where
 
 import CLaSH.Prelude hiding (empty, lookup)
 import qualified CPU.Cache.AssocCache as Assoc

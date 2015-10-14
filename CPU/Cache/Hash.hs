@@ -3,6 +3,7 @@
 module CPU.Cache.Hash (Hash, hash) where
 
 import CLaSH.Prelude
+import CPU.Defs (PC(..))
 
 class Hash a n where
     hash :: a -> BitVector n
@@ -14,3 +15,6 @@ instance (KnownNat n, KnownNat b, n <= b) => Hash (BitVector b) n where
 
 instance (KnownNat n, KnownNat b, n <= b) => Hash (Signed b) n where
     hash = resize . pack
+
+instance (KnownNat n, n <= 16) => Hash PC n where
+    hash (PC v) = hash v
