@@ -64,7 +64,7 @@ detectMisprediction :: Fetched -> (Jump, Fetched)
 detectMisprediction fetched = case opOf fetched of
     Jmp pc -> if predicted == pc
         then (NoJump, fetched) -- We got it right
-        else (Jump pc, fetched {predictedOf = Predicted pc}) -- Got it wrong
+        else (Jump pc, invalidated) -- Got it wrong
     Jeq _ _ _ -> (NoJump, fetched) -- Defer any opinion until it gets turned into a Jmp
     _ -> if predicted == plus1
         then (NoJump, fetched) -- All good

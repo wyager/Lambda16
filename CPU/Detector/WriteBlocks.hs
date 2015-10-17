@@ -1,14 +1,14 @@
 module CPU.Detector.WriteBlocks (memWritebackBlock, regWritebackBlock) where
 import CLaSH.Prelude
 import CPU.Defs (Addr, Reg, Write(..))
-import CPU.Ops (Op(..))
+import CPU.Ops (Op(..), Fetched(..))
 
-memWritebackBlock :: Op -> Write Addr
-memWritebackBlock op = case op of
-    StLit w addr pc -> Write addr w
-    _ -> NoWrite
+memWritebackBlock :: Fetched -> Write Addr
+memWritebackBlock fetched = case opOf fetched of
+    StLit w addr -> Write addr w
+    _            -> NoWrite
 
-regWritebackBlock :: Op -> Write Reg
-regWritebackBlock op = case op of
+regWritebackBlock :: Fetched -> Write Reg
+regWritebackBlock fetched = case opOf fetched of
     Mov w reg -> Write reg w
-    _ -> NoWrite
+    _         -> NoWrite

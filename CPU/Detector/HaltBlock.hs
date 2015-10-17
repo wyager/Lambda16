@@ -1,8 +1,7 @@
 module CPU.Detector.HaltBlock (haltBlock) where
 
 import CLaSH.Prelude
-import CPU.Ops(Op(..))
+import CPU.Ops(Op(..), Fetched(..))
 
-haltBlock :: Op -> Bool
-haltBlock Halt = True
-haltBlock _    = False
+haltBlock :: Fetched -> Bool
+haltBlock fetched = opOf fetched == Halt

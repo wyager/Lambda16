@@ -2,7 +2,7 @@ module CPU.CPU (cpu) where
 
 import CLaSH.Prelude hiding (Read)
 import CPU.Defs(S,W,PC,Reg,Write(..),Read,Addr,Jump(..))
-import CPU.Ops(Op(..))
+import CPU.Ops(Op(..), invalidated)
 import CPU.Fetch.MicroFetch (microfetch)
 import CPU.Rewrite.RewriteBlocks (decodeRewrite, waitRewrite, writebackRewrite)
 import CPU.Detector.ReadBlocks (memReadBlock, regReadBlock)
@@ -34,14 +34,14 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
     (stall, decode_jump, decode_op) = unbundle $ decodeRewrite <$> wait_op <*> writeback_op <*> decode_mem_cache <*> decode_cache <*> wait_jump <*> fetch_op
     mem_read = memReadBlock <$> decode_op
     reg_read = regReadBlock <$> decode_op
-    decode_op' = register Nop decode_op
+    decode_op' = register invalidated decode_op
     (wait_jump, wait_op) = unbundle $ waitRewrite <$> wait_mem_cache <*> wait_cache <*> writeback_jump <*> decode_op'
-    wait_op' = register Nop wait_op
+    wait_op' = register invalidated wait_op
     (writeback_jump, writeback_op) = unbundle $ writebackRewrite <$> mem_read_2 <*> regs <*> mem_hazard_jump <*> wait_op'
     mem_write = register NoWrite $ memWritebackBlock <$> writeback_op
     reg_write = regWritebackBlock <$> writeback_op
     halt = haltBlock <$> writeback_op
-    wb' = register Nop writeback_op
+    wb' = register invalidated writeback_op
     mem_hazard_jump = selfModifying mem_read_pc wb'
 
     decode_cache = also regWrites wait_op wait_cache
