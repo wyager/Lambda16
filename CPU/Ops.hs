@@ -1,4 +1,4 @@
-module CPU.Ops (Op(..), Fetched(..), invalidated, package) where
+module CPU.Ops (Op(..), Fetched(..), invalidated, package, parse) where
 
 import CLaSH.Prelude 
 import CPU.Defs (W(..), Reg(..), Addr(..), PC(..), Validity(..), Predicted(..))

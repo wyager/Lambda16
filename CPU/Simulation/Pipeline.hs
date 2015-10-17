@@ -7,4 +7,4 @@ import CLaSH.Prelude
 data Pipeline = Pipeline Fetched Fetched Fetched Fetched Fetched Fetched -- uf, d, d', w, w', wb
 
 instance Show Pipeline where
-    show (Pipeline uf d d' w w' wb) = printf "#   %s [>] %s   [^]   %s [>] %s   [^]   %s [>] %s" (show uf) (show d) (show d') (show w) (show w') (show wb)
+    show (Pipeline uf d d' w w' wb) = printf "VVVVVVVVVVVVVVVV\n%s [>] %s\n%s [>] %s\n%s [>] %s\n^^^^^^^^^^^^^^^^" (show uf) (show d) (show d') (show w) (show w') (show wb)

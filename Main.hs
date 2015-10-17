@@ -11,7 +11,7 @@ main = do
     let ram = toVector mem :: Vec 65536 W
     putStrLn "\n-----Loaded RAM-----"
     putStrLn "------Program:------\n"
-    mapM print $ P.map parse $ P.zip3 mem [0..] (P.repeat Valid)
+    mapM print $ P.map parse mem
     putStrLn "\n\n------Output:-------"
     mapM putStrLn $ sampleN 130 $ simulateCPU ram
     

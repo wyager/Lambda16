@@ -20,9 +20,11 @@ data Jump = Jump PC | NoJump deriving (Eq, Show)
 
 data Validity = Invalid | Valid deriving (Eq, Show)
 
-newtype Predicted a = Predicted {prediction :: a} deriving (Eq, Num, Show)
+newtype Predicted a = Predicted {prediction :: a} deriving (Eq, Num)
 
 instance Show Addr where show (Addr a) = printf "[Addr %x]" (fromEnum a)
 instance Show PC where show (PC a)     = printf "[PC %x]"   (fromEnum a)
 instance Show W where show (W a)       = printf "[W %x]"    (fromEnum a)
 instance Show Reg where show (Reg a)   = printf "[Reg %x]"  (fromEnum a)
+instance Show a => Show (Predicted a) where 
+    show (Predicted a) = printf "[Pred %s]" (show a)
