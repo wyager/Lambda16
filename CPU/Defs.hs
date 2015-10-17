@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module CPU.Defs (S,Addr(..),W(..),Reg(..),PC(..),Write(..),Read(..),Jump(..),Validity(..)) where
+module CPU.Defs (S,Addr(..),W(..),Reg(..),PC(..),Write(..),Read(..),Jump(..),Validity(..), Predicted(..)) where
 
 import CLaSH.Prelude hiding (Read)
 import Text.Printf (printf)
@@ -19,6 +19,8 @@ data Read a = Read a | NoRead deriving (Eq, Show)
 data Jump = Jump PC | NoJump deriving (Eq, Show)
 
 data Validity = Invalid | Valid deriving (Eq, Show)
+
+newtype Predicted a = Predicted {prediction :: a} deriving (Eq, Num, Show)
 
 instance Show Addr where show (Addr a) = printf "[Addr %x]" (fromEnum a)
 instance Show PC where show (PC a)     = printf "[PC %x]"   (fromEnum a)

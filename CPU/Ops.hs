@@ -1,7 +1,7 @@
-module CPU.Ops (Op(..), parse) where
+module CPU.Ops (Op(..), Fetched(..), invalidated, package) where
 
 import CLaSH.Prelude 
-import CPU.Defs (W(..), Reg(..), Addr(..), PC(..), Validity(..))
+import CPU.Defs (W(..), Reg(..), Addr(..), PC(..), Validity(..), Predicted(..))
 
 data Op = Nop |
           Halt |
@@ -14,21 +14,29 @@ data Op = Nop |
           Ldr1 Reg Reg |
           Ldr1Lit Addr |
           Ldr2 Reg |
-          St Reg Addr PC | -- We keep track of the PC so that we know where to jump if we cause a write hazard
-          StLit W Addr PC 
+          St Reg Addr | 
+          StLit W Addr 
           deriving (Eq, Show)
 
-parse :: (W,PC,Validity) -> Op
-parse (_,   _,  Invalid) = Nop
-parse (W v, pc, Valid)   = case opcode of
+data Fetched = Fetched {opOf :: Op, pcOf :: PC, predictedOf :: Predicted PC} deriving (Show)
+
+invalidated :: Fetched
+invalidated = Fetched Nop 0 1
+
+package :: (Validity, W, PC, Predicted PC) -> Fetched
+package (Invalid, _, _,  _)    = invalidated
+package (Valid,   w, pc, pred) = Fetched (parse w) pc pred
+
+parse :: W -> Op
+parse (W v) = case opcode of
     0 -> Mov (W $ zeroExtend $ slice d11 d4 v) t
     1 -> Add a b t
     2 -> Jmp (PC $ zeroExtend $ slice d11 d0 v)
     3 -> Halt
     4 -> Ld (Addr $ zeroExtend $ slice d11 d4 v) t
     5 -> Ldr a b t
-    6 -> Jeq a b (pc + (PC $ zeroExtend $ slice d3 d0 v))
-    7 -> St a (Addr $ zeroExtend $ slice d7 d0 v) pc
+    6 -> Jeq a b (PC $ zeroExtend $ slice d3 d0 v)
+    7 -> St a (Addr $ zeroExtend $ slice d7 d0 v) 
     _ -> error "Invalid opcode"
     where
     opcode = slice d15 d12 v

@@ -12,7 +12,7 @@ opRegReads op = case op of
     Add  r1 r2 r3   -> Just (r1, r2)
     Ldr1 r1 r2      -> Just (r1, r2)
     Jeq  r1 r2 pc'  -> Just (r1, r2)
-    St   r1 addr pc -> Just (r1, r1)
+    St   r1 addr    -> Just (r1, r1)
     otherOp         -> Nothing
 
 opRegWrites :: Op -> Maybe Reg
@@ -33,8 +33,8 @@ opMemReads op = case op of
 
 opMemWrites :: Op -> Maybe Addr
 opMemWrites op = case op of
-    St _ addr _    -> Just addr
-    StLit _ addr _ -> Just addr
+    St _ addr      -> Just addr
+    StLit _ addr   -> Just addr
     _              -> Nothing
 
 hazard :: (Op -> Maybe r) -> (Op -> Maybe w) -> (r -> w -> Bool) -> Op -> Op -> Op -> Bool
