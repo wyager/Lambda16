@@ -26,3 +26,6 @@ record detector = moore update' id WC.empty
 
 also :: (KnownNat n, Eq a) => (Fetched -> CachedWrite a) -> S Fetched -> S (WriteCache n a) -> S (WriteCache n a)
 also detector fetched cache = (update . detector) <$> fetched <*> cache
+
+--tap :: (KnownNat n, Eq a) => S (WriteCache n a) -> S a -> S (Maybe W)
+--tap = liftA2 WC.lookup

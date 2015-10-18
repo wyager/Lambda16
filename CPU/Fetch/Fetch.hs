@@ -1,13 +1,14 @@
 module CPU.Fetch.Fetch (fetch) where
 
 import qualified Prelude as P
-import CLaSH.Prelude
+import CLaSH.Prelude hiding (lookup)
 import CPU.Defs (S, W(..), PC, Write(..), Jump(..), Validity(..), Predicted(..))
+import CPU.Fetch.SimplePredictor (PCHash, Predictor, lookup)
 -- import RAM (ram)
 
 -- Stall means to hold the current state
-fetch :: S W -> S Bool -> S Jump -> S (PC, (Validity, W, PC, Predicted PC))
-fetch mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc, f1_predicted))
+fetch :: (PCHash j, KnownNat k) => S (Predictor j k) -> S W -> S Bool -> S Jump -> S (PC, (Validity, W, PC, Predicted PC))
+fetch predictor mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc, f1_predicted))
     where
     instr = mux stalled prev mem_read
     prev = register 0xF0F0 instr
@@ -19,7 +20,7 @@ fetch mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc, f1_predi
     f_valid = regEn Invalid (not1 stall) (signal Valid)
 
     f1_predicted = register undefined f_predicted
-    f_predicted = Predicted <$> f_pc + 1
+    f_predicted = lookup <$> predictor <*> f_pc
 
     pc' = jump <$> jmp <*> mux stall f_pc (prediction <$> f_predicted)
     jump (NoJump) pc = pc

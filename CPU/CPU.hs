@@ -13,10 +13,11 @@ import CPU.Cache.CacheBlocks (record, also, regWrites, memWrites)
 import CPU.Detector.SanityBlock (Sanity(..), decodeSanity, waitSanity, writebackSanity)
 import CPU.Simulation.Pipeline (Pipeline(..))
 import CPU.Hazard.SelfModifying (selfModifying)
+import CPU.Fetch.SimplePredictor (Predictor, predictorTap)
 
 import Data.Monoid (Monoid, (<>))
 
-type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump)
+type Debug = () -- (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump)
 
 
 -- Roughly speaking:
@@ -30,7 +31,7 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
     where
     (mem_read_1, mem_read_2) = unbundle mem
     (reg_read_1, reg_read_2) = unbundle regs
-    (mem_read_pc, fetch_op)  = unbundle $ microfetch decode_cache mem_read_1 stall decode_jump
+    (mem_read_pc, fetch_op)  = unbundle $ microfetch predictor decode_cache mem_read_1 stall decode_jump
     (stall, decode_jump, decode_op) = unbundle $ decodeRewrite <$> wait_op <*> writeback_op <*> decode_mem_cache <*> decode_cache <*> wait_jump <*> fetch_op
     mem_read = memReadBlock <$> decode_op
     reg_read = regReadBlock <$> decode_op
@@ -52,10 +53,13 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
     wait_mem_cache = also memWrites writeback_op mem_cache
     mem_cache = record memWrites writeback_op :: S (WriteCache 8 Addr)
 
-    sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
+    -- sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
 
-    debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache, decode_jump)
-    pipeline = Pipeline <$> fetch_op <*> decode_op <*> decode_op' <*> wait_op <*> wait_op' <*> writeback_op
+    debug = signal ()
+    -- debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache, decode_jump)
+    -- pipeline = Pipeline <$> fetch_op <*> decode_op <*> decode_op' <*> wait_op <*> wait_op' <*> writeback_op
+
+    predictor = predictorTap writeback_op :: S (Predictor 3 2)
 
 (<<>>) :: (Monoid m) => S m -> S m -> S m
 (<<>>) = liftA2 (<>)

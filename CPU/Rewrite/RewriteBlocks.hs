@@ -98,7 +98,7 @@ writebackSimplify mem (r1,r2) fetched = fetched {opOf = op'}
         Add _ _ reg  -> Mov (r1 + r2) reg
         Ld _ reg     -> Mov mem reg
         Jeq _ _ dpc  -> if r1 == r2 then Jmp (pcOf fetched + dpc) else Nop
-        St _ addr    -> StLit mem addr
+        St _ addr    -> StLit r1 addr
         Ldr1 _ _     -> Ldr1Lit (Addr . w $ (r1 + r2))
         otherOp      -> otherOp
 
