@@ -1,14 +1,14 @@
-module CPU.Rewrite.RewriteBlocks (microfetchRewrite, decodeRewrite, waitRewrite, writebackRewrite) where
+module CPU.Rewrite.RewriteBlocksTap (microfetchRewrite, decodeRewrite, waitRewrite, writebackRewrite) where
 
 import CLaSH.Prelude hiding (lookup)
 import CPU.Defs (Reg, Addr(..), W(..), Jump(..), Predicted(..))
 import CPU.Hazard.Hazard (hazard, opRegReads, opRegWrites, regConflict, opMemReads, opMemWrites, memConflict)
 import CPU.Ops(Op(..), Fetched(..), invalidated)
-import CPU.Cache.WriteCache (WriteCache, lookup)
+import Data.Cache.CacheBlocks (Tap)
 
 -- Only rewrites Ldrs. This lets us sometimes avoid having to use microcode
-microfetchRewrite :: KnownNat n => WriteCache n Reg -> Fetched -> Fetched
-microfetchRewrite cached (Fetched (Ldr a b t) pc pred) = Fetched op' pc pred
+microfetchRewrite :: Tap Reg -> Tap Reg -> S Fetched -> S Fetched
+microfetchRewrite tap1 tap2 (Fetched (Ldr a b t) pc pred) = Fetched op' pc pred
     where 
     op' = case (lookup cached a, lookup cached b) of
         (Just av, Just bv) -> Ld (Addr $ w av + w bv) t

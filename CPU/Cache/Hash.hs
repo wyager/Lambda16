@@ -17,4 +17,4 @@ instance (KnownNat n, KnownNat b, n <= b) => Hash (Signed b) n where
     hash = resize . pack
 
 instance (KnownNat n, n <= 16) => Hash PC n where
-    hash (PC v) = hash v
+    hash (PC v) = hash (v + (v `shiftR` 4) + (v `shiftR` 8))

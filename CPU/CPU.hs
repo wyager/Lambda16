@@ -64,7 +64,7 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
     -- debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache, decode_jump)
     -- pipeline = Pipeline <$> fetch_op <*> decode_op <*> decode_op' <*> wait_op <*> wait_op' <*> writeback_op
 
-    predictor = predictorTap writeback_op :: S (Predictor 3 2)
+    predictor = predictorTap writeback_op :: S (Predictor 3 6)
 
 (<<>>) :: (Monoid m) => S m -> S m -> S m
 (<<>>) = liftA2 (<>)
