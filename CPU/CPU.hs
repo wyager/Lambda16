@@ -9,7 +9,7 @@ import CPU.Detector.ReadBlocks (memReadBlock, regReadBlock)
 import CPU.Detector.WriteBlocks (memWritebackBlock, regWritebackBlock)
 import CPU.Detector.HaltBlock (haltBlock)
 import CPU.Cache.WriteCache (WriteCache)
-import CPU.Cache.CacheBlocks (record, also, regWrites, memWrites)
+import CPU.Cache.CacheBlocks (record, also, regWrites, memWrites, Tap, tap, also')
 import CPU.Detector.SanityBlock (Sanity(..), decodeSanity, waitSanity, writebackSanity)
 import CPU.Simulation.Pipeline (Pipeline(..))
 import CPU.Hazard.SelfModifying (selfModifying)
@@ -48,10 +48,15 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
     decode_cache = also regWrites wait_op wait_cache
     wait_cache = also regWrites writeback_op cache
     cache = record regWrites writeback_op :: S (WriteCache 8 Reg)
+    cache_tap = tap cache :: Tap Reg
+    wait_tap = also' regWrites writeback_op cache_tap
+    decode_tap = also' regWrites wait_op wait_tap
+
 
     decode_mem_cache = also memWrites wait_op wait_mem_cache
     wait_mem_cache = also memWrites writeback_op mem_cache
     mem_cache = record memWrites writeback_op :: S (WriteCache 8 Addr)
+
 
     -- sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
 

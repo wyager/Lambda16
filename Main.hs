@@ -13,5 +13,5 @@ main = do
     putStrLn "------Program:------\n"
     mapM print $ P.map parse mem
     putStrLn "\n\n------Output:-------"
-    mapM putStrLn $ sampleN 130 $ simulateCPU ram
+    mapM putStrLn $ sampleN 10000 $ simulateCPU ram
     
