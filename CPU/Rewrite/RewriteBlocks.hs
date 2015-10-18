@@ -58,13 +58,13 @@ jmpRewrite :: Jump -> Fetched -> (Jump, Fetched)
 jmpRewrite (Jump pc) _       = (Jump pc, invalidated)
 jmpRewrite NoJump    fetched = detectMisprediction fetched
 
--- We don't actually invalidate jumps anymore. 
--- We just re-write them so they've already been taken, and nothing needs to be done.
+-- Note: We actually need to keep Jmps now, because otherwise
+-- It will think we severely mis-predicted a Nop.
 detectMisprediction :: Fetched -> (Jump, Fetched)
 detectMisprediction fetched = case opOf fetched of
     Jmp pc -> if predicted == pc
         then (NoJump, fetched) -- We got it right
-        else (Jump pc, invalidated) -- Got it wrong
+        else (Jump pc, fetched {predictedOf = Predicted pc}) -- Got it wrong. Set the predicted to be correct
     Jeq _ _ _ -> (NoJump, fetched) -- Defer any opinion until it gets turned into a Jmp
     _ -> if predicted == plus1
         then (NoJump, fetched) -- All good

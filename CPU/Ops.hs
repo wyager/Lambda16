@@ -2,6 +2,7 @@ module CPU.Ops (Op(..), Fetched(..), invalidated, package, parse) where
 
 import CLaSH.Prelude 
 import CPU.Defs (W(..), Reg(..), Addr(..), PC(..), Validity(..), Predicted(..))
+import Text.Printf (printf)
 
 data Op = Nop |
           Halt |
@@ -18,7 +19,8 @@ data Op = Nop |
           StLit W Addr 
           deriving (Eq, Show)
 
-data Fetched = Fetched {opOf :: Op, pcOf :: PC, predictedOf :: Predicted PC} deriving (Show)
+data Fetched = Fetched {opOf :: Op, pcOf :: PC, predictedOf :: Predicted PC}
+instance Show Fetched where show (Fetched op pc pred) = printf "[Fetched [%s] %s %s]" (show op) (show pc) (show pred)
 
 invalidated :: Fetched
 invalidated = Fetched Nop 0 1

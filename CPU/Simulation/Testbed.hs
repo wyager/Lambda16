@@ -13,7 +13,7 @@ import qualified Prelude as P
 simulateCPU :: Vec 65536 W -> S String
 simulateCPU ram_contents = mux halt (signal "!!!!!!!!!!!!!!! HALT !!!!!!!!!!!!!") $ prettify <$> debug <*> reg_write <*> ram_write
     where
-    prettify (sanity, pipeline, dcache, wcache, cache) reg_write mem_write = display [prettify1 reg_write, prettify2 mem_write, show sanity, show pipeline, show dcache, show wcache, show cache]
+    prettify (sanity, pipeline, dcache, wcache, cache, decode_jmp) reg_write mem_write = display [prettify1 reg_write] -- , prettify2 mem_write, show sanity, show pipeline, show dcache, show wcache, show cache, show decode_jmp]
         where
         display = ("-------------\n" P.++) . intercalate "\n"
         prettify1 (NoWrite) = "Nothing Written"

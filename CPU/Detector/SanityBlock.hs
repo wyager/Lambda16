@@ -3,6 +3,7 @@ module CPU.Detector.SanityBlock (Sanity(..), decodeSanity, waitSanity, writeback
 import CLaSH.Prelude
 import Data.Monoid (Monoid, mempty, mappend)
 import CPU.Ops(Op(..), Fetched(..))
+import CPU.Defs(prediction)
 
 data Sanity = Sane | Insane (BitVector 16) deriving Show
 
@@ -20,7 +21,9 @@ decodeSanity :: Fetched -> Sanity
 decodeSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 0
     Ldr2 _    -> insane 1
-    Jmp _     -> insane 2
+    Jmp pc    -> if prediction (predictedOf fetched) /= pc
+                    then insane 2
+                    else Sane
     _         -> Sane
 
 
@@ -28,7 +31,9 @@ waitSanity :: Fetched -> Sanity
 waitSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 3
     Ldr2 _    -> insane 4
-    Jmp _     -> insane 5
+    Jmp pc    -> if prediction (predictedOf fetched) /= pc
+                    then insane 5
+                    else Sane
     _         -> Sane
 
 
@@ -37,7 +42,9 @@ writebackSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 6
     Ldr1 _ _  -> insane 7
     Ldr2 _    -> insane 8
-    Jmp _     -> insane 9
+    Jmp pc    -> if prediction (predictedOf fetched) /= pc
+                    then insane 9
+                    else Sane
     Add _ _ _ -> insane 10
     Jeq _ _ _ -> insane 11
     St _ _    -> insane 12

@@ -16,7 +16,7 @@ import CPU.Hazard.SelfModifying (selfModifying)
 
 import Data.Monoid (Monoid, (<>))
 
-type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg)
+type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump)
 
 
 -- Roughly speaking:
@@ -54,7 +54,7 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
 
     sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
 
-    debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache)
+    debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache, decode_jump)
     pipeline = Pipeline <$> fetch_op <*> decode_op <*> decode_op' <*> wait_op <*> wait_op' <*> writeback_op
 
 (<<>>) :: (Monoid m) => S m -> S m -> S m
