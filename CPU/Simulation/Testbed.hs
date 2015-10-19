@@ -13,14 +13,14 @@ import qualified Prelude as P
 simulateCPU :: Vec 65536 W -> S String
 simulateCPU ram_contents = mux halt (signal "!!!!!!!!!!!!!!! HALT !!!!!!!!!!!!!") $ prettify <$> debug <*> reg_write <*> ram_write
     where
-    prettify () reg_write mem_write = (show reg_write) P.++ " " P.++ (show mem_write)
-    --prettify (sanity, pipeline, dcache, wcache, cache, decode_jmp) reg_write mem_write = display [prettify1 reg_write] -- , prettify2 mem_write, show sanity, show pipeline, show dcache, show wcache, show cache, show decode_jmp]
-    --    where
-    --    display = ("-------------\n" P.++) . intercalate "\n"
-    --    prettify1 (NoWrite) = "Nothing Written"
-    --    prettify1 (Write addr word) = printf "r[0x%x] = 0x%x" (fromEnum addr) (fromEnum word)
-    --    prettify2 (NoWrite) = "No mem write"
-    --    prettify2 (Write addr word) = printf "mem[0x%x] = 0x%x" (fromEnum addr) (fromEnum word)
+    --prettify () reg_write mem_write = (show reg_write) P.++ " " P.++ (show mem_write)
+    prettify (sanity, pipeline, dcache, wcache, cache, decode_jmp, regs) reg_write mem_write = display [prettify1 reg_write, prettify2 mem_write, show sanity, show pipeline, show dcache, show wcache, show cache, show decode_jmp, show regs]
+        where
+        display = ("-------------\n" P.++) . intercalate "\n"
+        prettify1 (NoWrite) = "Nothing Written"
+        prettify1 (Write addr word) = printf "r[0x%x] = 0x%x" (fromEnum addr) (fromEnum word)
+        prettify2 (NoWrite) = "No mem write"
+        prettify2 (Write addr word) = printf "mem[0x%x] = 0x%x" (fromEnum addr) (fromEnum word)
     ram_read = ram ram_contents ram_pc (toAddr <$> ram_read_addr) ram_write
     reg_read = regs (repeat 0) (toReg <$> reg_read_addr) reg_write 
     (ram_pc, ram_read_addr, reg_read_addr, ram_write, reg_write, halt, debug) = unbundle $ cpu ram_read reg_read

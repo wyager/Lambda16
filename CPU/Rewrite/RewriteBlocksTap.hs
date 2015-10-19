@@ -8,7 +8,14 @@ import Data.Cache.CacheBlocks (Tap)
 
 -- Only rewrites Ldrs. This lets us sometimes avoid having to use microcode
 microfetchRewrite :: Tap Reg -> Tap Reg -> S Fetched -> S Fetched
-microfetchRewrite tap1 tap2 (Fetched (Ldr a b t) pc pred) = Fetched op' pc pred
+microfetchRewrite tap1 tap2 fetched = 
+    where
+    l1 = tap1 i1
+    l2 = tap2 i2
+    (i1, i2) = unbundle (is <$>)
+
+
+(Fetched (Ldr a b t) pc pred) = Fetched op' pc pred
     where 
     op' = case (lookup cached a, lookup cached b) of
         (Just av, Just bv) -> Ld (Addr $ w av + w bv) t

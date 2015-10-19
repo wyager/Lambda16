@@ -21,6 +21,8 @@ fetch predictor mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc
 
     f1_predicted = register undefined f_predicted
     f_predicted = lookup <$> predictor <*> f_pc
+    --prev_predictor = register undefined predictor'
+    --predictor' = mux stalled prev_predictor predictor
 
     pc' = jump <$> jmp <*> mux stall f_pc (prediction <$> f_predicted)
     jump (NoJump) pc = pc
