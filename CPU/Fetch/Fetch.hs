@@ -19,12 +19,15 @@ fetch predictor mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc
     f1_valid = regEn Invalid (not1 stall) (mux jumping (signal Invalid) f_valid)
     f_valid = regEn Invalid (not1 stall) (signal Valid)
 
-    f1_predicted = register undefined f_predicted
-    f_predicted = lookup <$> predictor <*> f_pc
+    --f1_predicted = regEn undefined (not1 stall) f_predicted
+    --f_predicted = regEn 0 (not1 stall) $ lookup <$> predictor <*> pc'
+    f1_predicted = regEn undefined (not1 stall) f_predicted
+    f_predicted = regEn 0 (not1 stall) $ lookup <$> predictor <*> pc'
     --prev_predictor = register undefined predictor'
     --predictor' = mux stalled prev_predictor predictor
 
-    pc' = jump <$> jmp <*> mux stall f_pc (prediction <$> f_predicted)
+    f_pc_pred = prediction <$> (lookup <$> predictor <*> f_pc)
+    pc' = jump <$> jmp <*> mux stall f_pc f_pc_pred
     jump (NoJump) pc = pc
     jump (Jump pc) _ = pc
     jumping = (/= NoJump) <$> jmp
