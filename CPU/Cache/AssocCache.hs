@@ -32,8 +32,8 @@ bunch :: (KnownNat n) => AssocCache n k v -> AssocCache n k v
 bunch (AssocCache vec) = AssocCache vec'
     where
     empty = map isNothing vec
-    free = sscanl (||) False empty
-    shifted = tail (vec <: Nothing)
+    free = postscanl (||) False empty
+    shifted = tail (vec :< Nothing)
     vec' = zipWith3 (\free unslid slid -> if free then slid else unslid) free vec shifted
 
 delete :: (KnownNat n, Eq k) => k -> AssocCache n k v -> AssocCache n k v
