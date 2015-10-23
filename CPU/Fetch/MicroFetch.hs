@@ -11,8 +11,9 @@ import CPU.Cache.WriteCache as WC (WriteCache, empty)
 import CPU.Rewrite.RewriteBlocks (microfetchRewrite)
 import CPU.Fetch.SimplePredictor as PR (PCHash, Predictor, empty)
 import qualified Prelude as P
+import CPU.Safety.Stages (Stage(F,X))
 
-microfetch :: (KnownNat n) => S Fetched -> S (WriteCache n Reg) -> S W -> S Bool -> S Jump -> S (PC, Fetched)
+microfetch :: (KnownNat n) => S (Fetched X) -> S (WriteCache n Reg) -> S W -> S Bool -> S Jump -> S (PC, (Fetched F))
 microfetch writeback_op cache mem stall jmp = bundle (mem_read_addr, op)
     where
     (mem_read_addr, read_data) = unbundle $ fetch writeback_op mem micro_stall jmp
@@ -24,7 +25,7 @@ microfetch writeback_op cache mem stall jmp = bundle (mem_read_addr, op)
 empty' :: Signal (WriteCache 0 Reg)
 empty' = signal WC.empty
 
-empty'' :: Signal Fetched -- (Predictor 0 0)
+empty'' :: Signal (Fetched X) -- (Predictor 0 0)
 empty'' = signal invalidated --PR.empty
 
 test :: Either String ()

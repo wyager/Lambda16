@@ -4,6 +4,7 @@ import CLaSH.Prelude
 import Data.Monoid (Monoid, mempty, mappend)
 import CPU.Ops(Op(..), Fetched(..))
 import CPU.Defs(prediction)
+import CPU.Safety.Stages (Stage(F,D,R,X))
 
 data Sanity = Sane | Insane (BitVector 16) deriving Show
 
@@ -17,7 +18,7 @@ instance Monoid Sanity where
 insane :: Int -> Sanity
 insane x = Insane (shiftL 1 x)
 
-decodeSanity :: Fetched -> Sanity
+decodeSanity :: Fetched D -> Sanity
 decodeSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 0
     Ldr2 _    -> insane 1
@@ -27,7 +28,7 @@ decodeSanity fetched = case opOf fetched of
     _         -> Sane
 
 
-waitSanity :: Fetched -> Sanity
+waitSanity :: Fetched R -> Sanity
 waitSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 3
     Ldr2 _    -> insane 4
@@ -37,7 +38,7 @@ waitSanity fetched = case opOf fetched of
     _         -> Sane
 
 
-writebackSanity :: Fetched -> Sanity
+writebackSanity :: Fetched X -> Sanity
 writebackSanity fetched = case opOf fetched of
     Ldr _ _ _ -> insane 6
     Ldr1 _ _  -> insane 7

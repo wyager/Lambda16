@@ -4,6 +4,7 @@ import CLaSH.Prelude hiding (empty, lookup)
 import CPU.Defs (Predicted(..), PC, S)
 import CPU.Ops (Fetched, pcOf, predictedOf)
 import qualified CPU.Cache.SetCache as SC
+import CPU.Safety.Stages (Stage(X))
 
 type PCHash n = (KnownNat n, KnownNat (2^n), n <= 16)
 
@@ -29,7 +30,7 @@ lookup (Predictor cache) pc = case SC.lookup cache pc of
 empty :: (PCHash n, KnownNat m) => Predictor n m
 empty = Predictor SC.empty
 
-predictorTap :: (PCHash n, KnownNat m) => S Fetched -> S (Predictor n m)
+predictorTap :: (PCHash n, KnownNat m) => S (Fetched X) -> S (Predictor n m)
 predictorTap fetched = predictor
     where
     predictor = register empty predictor'

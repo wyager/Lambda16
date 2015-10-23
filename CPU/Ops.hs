@@ -1,8 +1,10 @@
-module CPU.Ops (Op(..), Fetched(..), invalidated, package, parse) where
+{-# LANGUAGE ScopedTypeVariables #-}
+module CPU.Ops (Op(..), Fetched(..), invalidated, package, parse, pass) where
 
 import CLaSH.Prelude 
 import CPU.Defs (W(..), Reg(..), Addr(..), PC(..), Validity(..), Predicted(..))
 import Text.Printf (printf)
+import CPU.Safety.Stages (Stage(F,D,R,X), Rep, rep, IsStage, Succ)
 
 data Op = Nop |
           Halt |
@@ -19,13 +21,21 @@ data Op = Nop |
           StLit W Addr 
           deriving (Eq, Show)
 
-data Fetched = Fetched {opOf :: Op, pcOf :: PC, predictedOf :: Predicted PC}
-instance Show Fetched where show (Fetched op pc pred) = printf "[Fetched [%s] %s %s]" (show op) (show pc) (show pred)
+data Fetched (s :: Stage) = Fetched {opOf :: Op, pcOf :: PC, predictedOf :: Predicted PC}
+instance forall s . IsStage s => Show (Fetched s) where 
+    show (Fetched op pc pred) = printf "[Fetched@%s [%s] %s %s]" 
+      (show (rep :: Rep s))
+      (show op)
+      (show pc)
+      (show pred)
 
-invalidated :: Fetched
+pass :: (IsStage a, IsStage (Succ a)) => Fetched a -> Fetched (Succ a)
+pass (Fetched op pc pred) = Fetched op pc pred
+
+invalidated :: IsStage s => Fetched s
 invalidated = Fetched Nop 0 1
 
-package :: (Validity, W, PC, Predicted PC) -> Fetched
+package :: (Validity, W, PC, Predicted PC) -> Fetched F
 package (Invalid, _, _,  _)    = invalidated
 package (Valid,   w, pc, pred) = Fetched (parse w) pc pred
 

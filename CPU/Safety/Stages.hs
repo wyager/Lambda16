@@ -1,6 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Stages (Stage(..), Succ, Pred, IsStage) where
+module CPU.Safety.Stages (Stage(..), Succ, Pred, IsStage, Rep, rep) where
 
 import CLaSH.Prelude
 

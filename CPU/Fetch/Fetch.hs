@@ -5,10 +5,11 @@ import CLaSH.Prelude hiding (lookup)
 import CPU.Defs (S, W(..), PC, Write(..), Jump(..), Validity(..), Predicted(..))
 import CPU.Fetch.SimplePredictor (PCHash, Predictor, lookup, predictorTap)
 import CPU.Ops(Fetched)
+import CPU.Safety.Stages (Stage(X))
 -- import RAM (ram)
 
 -- Stall means to hold the current state
-fetch :: S Fetched -> S W -> S Bool -> S Jump -> S (PC, (Validity, W, PC, Predicted PC))
+fetch :: S (Fetched X) -> S W -> S Bool -> S Jump -> S (PC, (Validity, W, PC, Predicted PC))
 fetch writeback_op mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc, f1_predicted))
     where
     instr = mux stalled prev mem_read

@@ -5,6 +5,7 @@ import CLaSH.Prelude hiding (init)
 import CPU.Defs (S, W(..), PC, Write(..), Jump(..))
 import CPU.Ops(Op(..), Fetched(..), invalidated)
 import CPU.Fetch.Fetch (fetch)
+import CPU.Safety.Stages (Stage(F))
 
 --type Length = 3
 
@@ -12,12 +13,12 @@ type Ix = BitVector 2
 
 --data Microvec = Microvec (Vec Length Op) (Index Length) deriving Show
 
-rewriteLen :: Fetched -> Ix
+rewriteLen :: Fetched F -> Ix
 rewriteLen fetched = case opOf fetched of
     Ldr _ _ _ -> 3
     _         -> 1
 
-rewrite :: (Ix, Fetched) -> Fetched
+rewrite :: (Ix, Fetched F) -> Fetched F
 rewrite (ix, fetched) = case opOf fetched of
     Ldr a b t -> case ix of
         3 -> Fetched (Ldr1 a b) 0 1  -- If we mispredicted, we still 
@@ -26,18 +27,18 @@ rewrite (ix, fetched) = case opOf fetched of
     _         -> case ix of
         1 -> fetched
 
-next :: (Ix, Fetched) -> (Ix, Fetched)
+next :: (Ix, Fetched F) -> (Ix, Fetched F)
 next (ix, fetched) = (ix - 1, fetched)
 
-init :: Fetched -> (Ix, Fetched)
+init :: Fetched F -> (Ix, Fetched F)
 init fetched = (rewriteLen fetched, fetched)
 
-done :: (Ix, Fetched) -> Bool
+done :: (Ix, Fetched F) -> Bool
 done (ix, _) = ix == 0
 
 -- We don't want to rewrite this instruction during a jump. The jmp block will
 -- take care of that. We just want to stop stalling.
-microcode :: S Bool -> S Fetched -> S Bool -> S (Bool, Fetched)
+microcode :: S Bool -> S (Fetched F) -> S Bool -> S (Bool, Fetched F)
 microcode stall fetched jumping = bundle (fetch_stall, out_fetched)
     where
     input = init <$> fetched

@@ -3,7 +3,7 @@ module CPU.Hazard.SelfModifying (selfModifying) where
 import CLaSH.Prelude 
 import CPU.Defs (Jump(..), PC(..), Addr(..), S)
 import CPU.Ops(Op(..), Fetched(..))
-
+import CPU.Safety.Stages (Stage(X))
 -- We need to keep track of if any instructions in the pipeline were read from the address currently being written to.
 -- If they were, we need to jump to the stored PC + 1.
 
@@ -19,13 +19,13 @@ tally pc vec = if head vec == pc
 matches :: PC -> Vec 5 PC -> Bool
 matches pc vec = foldl (||) False $ map (==pc) vec
 
-selfModifying' :: Fetched -> Vec 5 PC -> Jump
+selfModifying' :: Fetched X -> Vec 5 PC -> Jump
 selfModifying' (Fetched (StLit w (Addr addr)) pc pred) vec = if PC addr `matches` vec
     then Jump (pc + 1)
     else NoJump
 selfModifying' _ _ = NoJump
 
-selfModifying :: S PC -> S Fetched -> S Jump
+selfModifying :: S PC -> S (Fetched X) -> S Jump
 selfModifying pc op =  selfModifying' <$> op <*> pcs -- Using current PC causes loop. I'm just registering after writeback and using a 5-element list. There is probably a better solution. 
     where
     pcs = register (repeat 0) pcs'
