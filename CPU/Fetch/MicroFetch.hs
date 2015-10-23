@@ -4,7 +4,7 @@ import CLaSH.Prelude hiding (empty)
 import CPU.Defs (S, W, PC, Jump(..), Write(..), Reg, Predicted(..))
 import CPU.Rewrite.Microcode (microcode)
 import CPU.Fetch.Fetch (fetch)
-import CPU.Ops (Op(..), package, Fetched(..))
+import CPU.Ops (Op(..), package, Fetched(..), invalidated)
 -- Testing
 import CPU.Simulation.RAM (ram)
 import CPU.Cache.WriteCache as WC (WriteCache, empty)
@@ -12,10 +12,10 @@ import CPU.Rewrite.RewriteBlocks (microfetchRewrite)
 import CPU.Fetch.SimplePredictor as PR (PCHash, Predictor, empty)
 import qualified Prelude as P
 
-microfetch :: (KnownNat n, PCHash j, KnownNat k) => S (Predictor j k) -> S (WriteCache n Reg) -> S W -> S Bool -> S Jump -> S (PC, Fetched)
-microfetch predictor cache mem stall jmp = bundle (mem_read_addr, op)
+microfetch :: (KnownNat n) => S Fetched -> S (WriteCache n Reg) -> S W -> S Bool -> S Jump -> S (PC, Fetched)
+microfetch writeback_op cache mem stall jmp = bundle (mem_read_addr, op)
     where
-    (mem_read_addr, read_data) = unbundle $ fetch predictor mem micro_stall jmp
+    (mem_read_addr, read_data) = unbundle $ fetch writeback_op mem micro_stall jmp
     -- Removes Ldrs for which we already know r[a] and r[b] so they don't get microcoded
     rewritten = microfetchRewrite <$> cache <*> (package <$> read_data) 
     (micro_stall, op) = unbundle $ microcode stall rewritten jumping
@@ -24,11 +24,11 @@ microfetch predictor cache mem stall jmp = bundle (mem_read_addr, op)
 empty' :: Signal (WriteCache 0 Reg)
 empty' = signal WC.empty
 
-empty'' :: Signal (Predictor 0 0)
-empty'' = signal PR.empty
+empty'' :: Signal Fetched -- (Predictor 0 0)
+empty'' = signal invalidated --PR.empty
 
 test :: Either String ()
-test = test1 >> test2 >> test3 >> test4 >> test5 >> test6 >> test7 >> test8 >> test9
+test = test1 >> test2 >> test3 >> test4 >> test5 >> test6 >> test7 >> test8
 
 test1 :: Either String ()
 test1 = if actual == expected
@@ -138,26 +138,3 @@ test8 = if actual == expected
     jump = fromList [NoJump, NoJump, NoJump, NoJump, Jump 0x0, NoJump, NoJump]
     actual = P.map opOf $ sampleN 7 ops
     expected = [Nop, Nop, Add 2 3 4, Ldr1 1 2, Ldr1 1 2, Nop, Add 2 3 4]
-
--- Hypothesis: There is something wrong with the prediction changing during a stall.
--- Evidence: I have a Jeq. It predicts the next PC correctly. It stalls for a few cycles waiting
--- for a dependency to clear out. The next instruction that comes out of microfetch is from the WRONG
--- PC, even though the Jeq recorded a correct prediction (and therefore won't jump)
-test9 :: Either String ()
-test9 = if actual == expected
-    then Right ()
-    else Left $ P.concat ["Microfetch test 9 failure.\n", "expected: ", show expected, "\nactual: ", show actual]
-    where
-    ram_contents = (0x1234 :> 0x5123 :> 0x1789 :> Nil) ++ repeat 0
-    mem = ram ram_contents
-    empty' :: Signal (WriteCache 0 Reg)
-    empty' = signal WC.empty
-    empty'' :: Signal (Predictor 0 0)
-    empty'' = signal PR.empty
-    (instrs,_) = unbundle $ mem pc 0 (signal NoWrite)
-    (pc, ops)  = unbundle $ microfetch empty'' empty' instrs stall jump
-    stall = fromList [False, False, False, True, False, False, False]
-    jump = fromList [NoJump, NoJump, NoJump, NoJump, Jump 0x0, NoJump, NoJump]
-    actual = P.map opOf $ sampleN 7 ops
-    expected = [Nop, Nop, Add 2 3 4, Ldr1 1 2, Ldr1 1 2, Nop, Add 2 3 4]
-
