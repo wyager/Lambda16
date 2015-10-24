@@ -14,60 +14,46 @@ import CPU.Detector.SanityBlock (Sanity(..), decodeSanity, waitSanity, writeback
 import CPU.Simulation.Pipeline (Pipeline(..))
 import CPU.Hazard.SelfModifying (selfModifying)
 import CPU.Fetch.SimplePredictor (Predictor, predictorTap)
-
 import Data.Monoid (Monoid, (<>))
 
 type Debug = () 
 -- type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump, (W,W))
 
-
--- Roughly speaking:
---    ^--RAM--v            ^------(memRead, regRead)---------v       ^-------(memWriteback, regWriteback, halt)            
--- fetch <> microcode |> decodeRewrite |> waitRewrite |> writebackRewrite |> writeback' (pending writes)
---                                          ^cache-----------------------v-------------v
---                          ^cache----------v--------v
-
 cpu :: S (W,W) -> S (W,W) -> S (PC, Read Addr, Read (Reg, Reg), Write Addr, Write Reg, Bool, Debug)
 cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, halt, debug)
     where
-    (mem_read_1, mem_read_2) = unbundle mem
-    (reg_read_1, reg_read_2) = unbundle regs
-    (mem_read_pc, fetch_op)  = unbundle $ microfetch writeback_op decode_cache mem_read_1 stall decode_jump
-    (stall, decode_jump, decode_op) = unbundle $ decodeRewrite <$> wait_op <*> writeback_op <*> decode_mem_cache <*> decode_cache <*> wait_jump <*> (pass <$> fetch_op)
-    mem_read = memReadBlock <$> decode_op
-    reg_read = regReadBlock <$> decode_op
-    decode_op' = register invalidated decode_op
-    (wait_jump, wait_op) = unbundle $ waitRewrite <$> wait_mem_cache <*> wait_cache <*> writeback_jump <*> (pass <$> decode_op')
-    wait_op' = register invalidated wait_op
-    (writeback_jump, writeback_op) = unbundle $ writebackRewrite <$> mem_read_2 <*> regs <*> mem_hazard_jump <*> (pass <$> wait_op')
-    mem_write = register NoWrite $ memWritebackBlock <$> writeback_op
-    reg_write = regWritebackBlock <$> writeback_op
-    halt = haltBlock <$> writeback_op
-    wb' = register invalidated writeback_op
-    mem_hazard_jump = selfModifying mem_read_pc wb'
+    (nem_data_1, mem_data_2) = unbundle mem
+    (mem_read_pc, f_op)  = unbundle $ microfetch x_op d_cache nem_data_1 stall d_jump
+    (stall, d_jump, d_op) = unbundle $ decodeRewrite <$> r_op <*> x_op <*> d_mem_cache <*> d_cache <*> r_jump <*> (pass <$> f_op)
+    mem_read = memReadBlock <$> d_op
+    reg_read = regReadBlock <$> d_op
+    d_op' = register invalidated d_op
+    (r_jump, r_op) = unbundle $ waitRewrite <$> r_mem_cache <*> r_cache <*> writeback_jump <*> (pass <$> d_op')
+    r_op' = register invalidated r_op
+    (writeback_jump, x_op) = unbundle $ writebackRewrite <$> mem_data_2 <*> regs <*> mem_hazard_jump <*> (pass <$> r_op')
+    mem_write = register NoWrite $ memWritebackBlock <$> x_op
+    reg_write = regWritebackBlock <$> x_op
+    halt = haltBlock <$> x_op
+    x_op' = register invalidated x_op
+    mem_hazard_jump = selfModifying mem_read_pc x_op'
 
-    decode_cache = also regWrites wait_op wait_cache
-    wait_cache = also regWrites writeback_op cache
-    cache = record regWrites writeback_op :: S (WriteCache 8 Reg)
+    -- Reg write caches
+    d_cache = also regWrites r_op r_cache   :: S (WriteCache 8 Reg)
+    r_cache = also regWrites x_op cache     :: S (WriteCache 8 Reg)
+    cache = record regWrites x_op           :: S (WriteCache 8 Reg)
     cache_tap = tap cache :: Tap Reg
-    wait_tap = also' regWrites writeback_op cache_tap
-    decode_tap = also' regWrites wait_op wait_tap
+    r_tap = also' regWrites x_op cache_tap
+    d_tap = also' regWrites r_op r_tap
 
-    -- @ 4632 cycles 0 instrs    CPI=inf, 35.8s with 8,8,3,6
-    -- @ 6925 cycles    0 instrs    CPI=inf, 21.56s with 4,4,2,3
-
-    decode_mem_cache = also memWrites wait_op wait_mem_cache
-    wait_mem_cache = also memWrites writeback_op mem_cache
-    mem_cache = record memWrites writeback_op :: S (WriteCache 8 Addr)
-
-
-    --sanity = (decodeSanity <$> decode_op) <<>> (waitSanity <$> wait_op) <<>> (writebackSanity <$> writeback_op)
+    -- Mem write caches
+    d_mem_cache = also memWrites r_op r_mem_cache   :: S (WriteCache 8 Addr)
+    r_mem_cache = also memWrites x_op mem_cache     :: S (WriteCache 8 Addr)
+    mem_cache = record memWrites x_op               :: S (WriteCache 8 Addr)
 
     debug = signal ()
-    --debug = bundle (sanity, pipeline, decode_cache, wait_cache, cache, decode_jump, regs)
-    --pipeline = Pipeline <$> fetch_op <*> decode_op <*> decode_op' <*> wait_op <*> wait_op' <*> writeback_op
-
-    --predictor = predictorTap writeback_op :: S (Predictor 3 4)
+    --debug = bundle (sanity, pipeline, d_cache, r_cache, cache, d_jump, regs)
+    --pipeline = Pipeline <$> f_op <*> d_op <*> d_op' <*> r_op <*> r_op' <*> x_op
+    --sanity = (decodeSanity <$> d_op) <<>> (waitSanity <$> r_op) <<>> (writebackSanity <$> x_op)
 
 (<<>>) :: (Monoid m) => S m -> S m -> S m
 (<<>>) = liftA2 (<>)

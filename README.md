@@ -3,12 +3,13 @@ This is my Cλash/Haskell implementation of a microprocessor for UT's CS 350C Ad
 The CPU is defined in CPU/CPU.hs.
 
 Features:
-* 4-stage pipeline (Fetch, Decode, Wait, Writeback)
+* 4-stage pipeline (Fetch, Decode, Read, Execute)
 * Flexible microcode rewriting (to support the `Ldr` instruction, which has both RAM and register dependencies)
 * Dynamic opportunistic instruction rewriting
 (e.g. `Add a b c` becomes `Mov (r[a] + r[b]) c` as soon as `r[a]` and `r[b]` are known)
 * Opportunistic jumping (`Jmp` happens immediately, `Jeq` happens when `r[a]` and `r[b]` are known)
 * Fully associative LRU memory and register write caches (size tunable by type parameter, default 8)
+* Branch predictor based on set-associative PC->PC lookup table (size tunable by type parameter, default 8-way direct * 4-way associative)
 * Fully simulatable without ever generating an HDL
 * Can target VHDL, Verilog, SystemVerilog
 
