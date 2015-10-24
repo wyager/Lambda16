@@ -49,7 +49,7 @@ parse (W v) = case opcode of
     5 -> Ldr a b t
     6 -> Jeq a b (PC $ zeroExtend $ slice d3 d0 v)
     7 -> St a (Addr $ zeroExtend $ slice d7 d0 v) 
-    _ -> error "Invalid opcode"
+    _ -> Nop -- Not code; ignore.
     where
     opcode = slice d15 d12 v
     a = Reg (slice d11 d8 v)

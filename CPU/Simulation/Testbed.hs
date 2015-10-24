@@ -11,7 +11,7 @@ import Data.List (intercalate)
 import qualified Prelude as P
 
 simulateCPU :: Vec 65536 W -> S String
-simulateCPU ram_contents = mux halt (signal "!!!!!!!!!!!!!!! HALT !!!!!!!!!!!!!") $ prettify <$> debug <*> reg_write <*> ram_write
+simulateCPU ram_contents = mux halt (signal (error "!!!!!!!!!!!!!!! HALT !!!!!!!!!!!!!"))  $ prettify <$> debug <*> reg_write <*> ram_write
     where
     prettify () reg_write mem_write = (show reg_write) P.++ " " P.++ (show mem_write)
     --prettify (sanity, pipeline, dcache, wcache, cache, decode_jmp, regs) reg_write mem_write = display [prettify1 reg_write, prettify2 mem_write, show sanity, show pipeline, show dcache, show wcache, show cache, show decode_jmp, show regs]

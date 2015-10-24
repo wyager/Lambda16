@@ -15,6 +15,7 @@ fetch writeback_op mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1
     instr = mux stalled prev mem_read
     prev = register 0xF0F0 instr
     stalled = register False stall
+    -- Should this be a regEn? See weirdness re. p8 memu jeq followed by jmp at beginning
     f1_pc = register undefined (mux stall f1_pc f_pc)
     f_pc = register (-1) pc'
 

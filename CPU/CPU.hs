@@ -17,7 +17,7 @@ import CPU.Fetch.SimplePredictor (Predictor, predictorTap)
 import Data.Monoid (Monoid, (<>))
 
 type Debug = () 
--- type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump, (W,W))
+--type Debug = (Sanity, Pipeline, WriteCache 8 Reg, WriteCache 8 Reg, WriteCache 8 Reg, Jump, (W,W))
 
 cpu :: S (W,W) -> S (W,W) -> S (PC, Read Addr, Read (Reg, Reg), Write Addr, Write Reg, Bool, Debug)
 cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, halt, debug)
