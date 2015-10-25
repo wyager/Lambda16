@@ -9,7 +9,7 @@ import CPU.Detector.ReadBlocks (memReadBlock, regReadBlock)
 import CPU.Detector.WriteBlocks (memWritebackBlock, regWritebackBlock)
 import CPU.Detector.HaltBlock (haltBlock)
 import CPU.Cache.WriteCache (WriteCache)
-import CPU.Cache.CacheBlocks (record, also, regWrites, memWrites, Tap, tap, also')
+import CPU.Cache.CacheBlocks (also, regWrites, memWrites, record)
 import CPU.Detector.SanityBlock (Sanity(..), dSanity, rSanity, xSanity)
 import CPU.Simulation.Pipeline (Pipeline(..))
 import CPU.Hazard.SelfModifying (selfModifying)
@@ -38,16 +38,11 @@ cpu mem regs = bundle (mem_read_pc, mem_read, reg_read, mem_write, reg_write, ha
 
     -- Reg write caches
     d_cache = also regWrites r_op r_cache   
-    r_cache = also regWrites x_op cache     
-    cache = record regWrites x_op :: S (WriteCache 8 Reg)
-    cache_tap = tap cache :: Tap Reg
-    r_tap = also' regWrites x_op cache_tap
-    d_tap = also' regWrites r_op r_tap
+    r_cache = record regWrites x_op :: S (WriteCache 8 Reg)
 
     -- Mem write caches
     d_mem_cache = also memWrites r_op r_mem_cache 
-    r_mem_cache = also memWrites x_op mem_cache 
-    mem_cache = record memWrites x_op :: S (WriteCache 8 Addr)
+    r_mem_cache = record memWrites x_op :: S (WriteCache 8 Addr)
 
     debug = signal ()
     --debug = bundle (sanity, pipeline, d_cache, r_cache, cache, d_jump, regs)

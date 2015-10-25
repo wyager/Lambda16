@@ -1,4 +1,4 @@
-module CPU.Cache.CacheBlocks (Tap, record, also, regWrites, memWrites, tap, also') where
+module CPU.Cache.CacheBlocks (Tap, also, regWrites, memWrites, record) where
 
 import CLaSH.Prelude
 import CPU.Ops (Op(..), Fetched(..))
@@ -23,22 +23,23 @@ memWrites fetched = case opOf fetched of
     _              -> NoCachedWrite
 
 record :: (KnownNat n, Eq a) => (Fetched X -> CachedWrite a) -> S (Fetched X) -> S (WriteCache n a)
-record detector = moore update' id WC.empty
+record detector x_op = cache'
     where
-    update' cache fetched = update (detector fetched) cache
+    cache = register WC.empty cache'
+    cache' = (update . detector) <$> x_op <*> cache
 
 also :: (KnownNat n, Eq a, IsStage s) => (Fetched s -> CachedWrite a) -> S (Fetched s) -> S (WriteCache n a) -> S (WriteCache n a)
 also detector fetched cache = (update . detector) <$> fetched <*> cache
 
-tap :: (KnownNat n, Eq a) => S (WriteCache n a) -> Tap a
-tap = liftA2 WC.lookup
+--tap :: (KnownNat n, Eq a) => S (WriteCache n a) -> Tap a
+--tap = liftA2 WC.lookup
 
-also' :: (IsStage s, Eq a) => (Fetched s -> CachedWrite a) -> S (Fetched s) -> Tap a -> Tap a
-also' detector fetched search addr = also'' <$> prevResult <*> write <*> addr
-    where
-    prevResult = search addr :: S (Maybe W)
-    write = detector <$> fetched
-    also'' prev NoCachedWrite    _    = prev
-    also'' prev (UnknownWrite a) addr = if a == addr then Nothing else prev
-    also'' prev (KnownWrite a v) addr = if a == addr then Just v  else prev
+--also' :: (IsStage s, Eq a) => (Fetched s -> CachedWrite a) -> S (Fetched s) -> Tap a -> Tap a
+--also' detector fetched search addr = also'' <$> prevResult <*> write <*> addr
+--    where
+--    prevResult = search addr :: S (Maybe W)
+--    write = detector <$> fetched
+--    also'' prev NoCachedWrite    _    = prev
+--    also'' prev (UnknownWrite a) addr = if a == addr then Nothing else prev
+--    also'' prev (KnownWrite a v) addr = if a == addr then Just v  else prev
 
