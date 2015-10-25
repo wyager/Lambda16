@@ -16,20 +16,20 @@ fetch x_op mem_read stall jmp = bundle (pc', bundle (f1_valid, instr, f1_pc, f1_
     instr = mux stalled prev mem_read
     prev = register 0xF0F0 instr
     stalled = register False stall
-    -- Should this be a regEn? See weirdness re. p8 memu jeq followed by jmp at beginning
+
     f1_pc = regEn undefined not_stall f_pc
-    f_pc = register (-1) pc' -- Why? Breaks if I switch to regEn
+    f_pc = register (-1) pc'
 
     f1_valid = regEn Invalid not_stall (mux jumping (signal Invalid) f_valid)
-    f_valid = regEn Invalid not_stall (signal Valid)
+    f_valid = register Invalid (signal Valid)
 
     f1_predicted = regEn undefined not_stall f_predicted
-    f_predicted = regEn 0 not_stall $ lookup <$> predictor <*> pc'
+    f_predicted = register 0 $ lookup <$> predictor <*> pc'
 
     predictor = predictorTap x_op :: S (Predictor 3 4)
 
     f_pc_pred = prediction <$> (lookup <$> predictor <*> f_pc)
-    pc' = jump <$> jmp <*> mux stall f_pc f_pc_pred
+    pc' = jump <$> jmp <*> mux stall f_pc (prediction <$> f_predicted)
     jump (NoJump) pc = pc
     jump (Jump pc) _ = pc
     jumping = (/= NoJump) <$> jmp
