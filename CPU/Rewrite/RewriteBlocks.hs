@@ -1,4 +1,4 @@
-module CPU.Rewrite.RewriteBlocks (microfetchRewrite, decodeRewrite, waitRewrite, writebackRewrite) where
+module CPU.Rewrite.RewriteBlocks (microfetchRewrite, dRewrite, rRewrite, xRewrite) where
 
 import CLaSH.Prelude hiding (lookup)
 import CPU.Defs (Reg, Addr(..), W(..), Jump(..), Predicted(..))
@@ -9,19 +9,19 @@ import CPU.Safety.Stages(Stage(F,D,R,X), IsStage)
 
 -- Only rewrites Ldrs. This lets us sometimes avoid having to use microcode
 microfetchRewrite :: KnownNat n => WriteCache n Reg -> Fetched F -> Fetched F
-microfetchRewrite cached (Fetched (Ldr a b t) pc pred) = Fetched op' pc pred
-    where 
-    op' = case (lookup cached a, lookup cached b) of
-        (Just av, Just bv) -> Ld (Addr $ w av + w bv) t
-        _                  -> Ldr a b t
-microfetchRewrite _      fetched                       = fetched
+microfetchRewrite cached f_op | (Ldr a b t) <- opOf f_op
+                              , (Just av)   <- lookup cached a
+                              , (Just bv)   <- lookup cached b
+                                          = f_op {opOf = Ld (Addr $ w av + w bv) t}
+                              | otherwise = f_op
+
 
 ldr2Rewrite :: Fetched X -> Fetched D -> Fetched D
-ldr2Rewrite wbFetched fetched = case opOf fetched of
-    Ldr2 reg -> case opOf wbFetched of
-        Ldr1Lit addr -> fetched {opOf = Ld addr reg}
-        -- Something is horribly wrong if writebackOp isn't an Ldr1Lit
-    _       -> fetched
+ldr2Rewrite x_op d_op = case opOf d_op of
+    Ldr2 reg -> case opOf x_op of
+        Ldr1Lit addr -> d_op {opOf = Ld addr reg}
+        -- Something is horribly wrong if x_op isn't an Ldr1Lit
+    _       -> d_op
 
 generalRewrite :: (IsStage s, KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Fetched s -> Fetched s
 generalRewrite mem_cached cached (Fetched op pc pred) = Fetched op' pc pred
@@ -47,41 +47,41 @@ generalRewrite mem_cached cached (Fetched op pc pred) = Fetched op' pc pred
         otherOp              -> otherOp
 
 stallRewrite :: Fetched R -> Fetched X -> Fetched D -> (Fetched D, Bool)
-stallRewrite wait writeback decode = if regHazard || memHazard 
+stallRewrite r_op x_op d_op = if regHazard || memHazard 
     then (invalidated, True)
-    else (decode,      False)
+    else (d_op,        False)
     where 
-    (d, w, wb) = (opOf decode, opOf wait, opOf writeback)
-    regHazard = hazard opRegReads opRegWrites regConflict d w wb
-    memHazard = hazard opMemReads opMemWrites memConflict d w wb
+    (d, r, x) = (opOf d_op, opOf r_op, opOf x_op)
+    regHazard = hazard opRegReads opRegWrites regConflict d r x
+    memHazard = hazard opMemReads opMemWrites memConflict d r x
 
 jmpRewrite :: IsStage s => Jump -> Fetched s -> (Jump, Fetched s)
-jmpRewrite (Jump pc) _       = (Jump pc, invalidated)
-jmpRewrite NoJump    fetched = detectMisprediction fetched
+jmpRewrite (Jump pc) _      = (Jump pc, invalidated)
+jmpRewrite NoJump    the_op = detectMisprediction the_op
 
 -- Note: We actually need to keep Jmps now, because otherwise
 -- It will think we severely mis-predicted a Nop.
 detectMisprediction :: IsStage s => Fetched s -> (Jump, Fetched s)
-detectMisprediction fetched = case opOf fetched of
+detectMisprediction the_op = case opOf the_op of
     Jmp pc -> if predicted == pc
-        then (NoJump, fetched) -- We got it right
-        else (Jump pc, fetched {predictedOf = Predicted pc}) -- Got it wrong. Set the predicted to be correct
-    Jeq _ _ _ -> (NoJump, fetched) -- Defer any opinion until it gets turned into a Jmp
+        then (NoJump, the_op) -- We got it right
+        else (Jump pc, the_op {predictedOf = Predicted pc}) -- Got it wrong. Set the predicted to be correct
+    Jeq _ _ _ -> (NoJump, the_op) -- Defer any opinion until it gets turned into a Jmp
     _ -> if predicted == plus1
-        then (NoJump, fetched) -- All good
-        else (Jump plus1, fetched {predictedOf = Predicted plus1})
+        then (NoJump, the_op) -- All good
+        else (Jump plus1, the_op {predictedOf = Predicted plus1})
     where
-    predicted = prediction (predictedOf fetched)
-    plus1 = pcOf fetched + 1
+    predicted = prediction (predictedOf the_op)
+    plus1 = pcOf the_op + 1
 
-decodeRewrite :: (KnownNat m, KnownNat n) => Fetched R -> Fetched X -> WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched D -> (Bool, Jump, Fetched D)
-decodeRewrite waitOp writebackOp mem_cache cache jump op = (stall, jump', op'')
+dRewrite :: (KnownNat m, KnownNat n) => Fetched R -> Fetched X -> WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched D -> (Bool, Jump, Fetched D)
+dRewrite r_op x_op mem_cache cache jump op = (stall, jump', op'')
     where 
-    (jump', op')  = jmpRewrite jump . generalRewrite mem_cache cache . ldr2Rewrite writebackOp $ op
-    (op'', stall) = stallRewrite waitOp writebackOp op'
+    (jump', op')  = jmpRewrite jump . generalRewrite mem_cache cache . ldr2Rewrite x_op $ op
+    (op'', stall) = stallRewrite r_op x_op op'
 
-waitRewrite :: (KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched R -> (Jump, Fetched R)
-waitRewrite mem_cache cache jump = jmpRewrite jump . generalRewrite mem_cache cache
+rRewrite :: (KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched R -> (Jump, Fetched R)
+rRewrite mem_cache cache jump = jmpRewrite jump . generalRewrite mem_cache cache
 
 -- We then also need to deal with the writeback result
 -- Also dont' forget to put a cache detector on the output of all rewriters, as well as one after writeback
@@ -91,17 +91,17 @@ waitRewrite mem_cache cache jump = jmpRewrite jump . generalRewrite mem_cache ca
 -- • Nop
 -- • StLit
 -- • Ldr1Lit (Writeback doesn't have to do anything; it's used by ldr2Rewrite)
--- -- • Jmp -- Nevermind, this gets handled by writebackRewrite's jmpRewrite
-writebackSimplify :: W -> (W,W) -> Fetched X -> Fetched X
-writebackSimplify mem (r1,r2) fetched = fetched {opOf = op'}
+-- -- • Jmp -- Nevermind, this gets handled by xRewrite's jmpRewrite
+xSimplify :: W -> (W,W) -> Fetched X -> Fetched X
+xSimplify mem (r1,r2) x_op = x_op {opOf = op'}
     where 
-    op' = case opOf fetched of
+    op' = case opOf x_op of
         Add _ _ reg -> Mov (r1 + r2) reg
         Ld _ reg    -> Mov mem reg
-        Jeq _ _ dpc -> if r1 == r2 then Jmp (pcOf fetched + dpc) else Nop
+        Jeq _ _ dpc -> if r1 == r2 then Jmp (pcOf x_op + dpc) else Nop
         St _ addr   -> StLit r1 addr
         Ldr1 _ _    -> Ldr1Lit (Addr . w $ (r1 + r2))
         otherOp     -> otherOp
 
-writebackRewrite :: W -> (W,W) -> Jump -> Fetched X -> (Jump, Fetched X)
-writebackRewrite mem (r1,r2) jump = jmpRewrite jump . writebackSimplify mem (r1,r2)
+xRewrite :: W -> (W,W) -> Jump -> Fetched X -> (Jump, Fetched X)
+xRewrite mem (r1,r2) jump = jmpRewrite jump . xSimplify mem (r1,r2)

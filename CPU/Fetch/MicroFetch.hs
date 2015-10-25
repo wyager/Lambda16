@@ -14,12 +14,12 @@ import qualified Prelude as P
 import CPU.Safety.Stages (Stage(F,X))
 
 microfetch :: (KnownNat n) => S (Fetched X) -> S (WriteCache n Reg) -> S W -> S Bool -> S Jump -> S (PC, (Fetched F))
-microfetch writeback_op cache mem stall jmp = bundle (mem_read_addr, op)
+microfetch x_op cache mem stall jmp = bundle (mem_read_addr, f_op)
     where
-    (mem_read_addr, read_data) = unbundle $ fetch writeback_op mem micro_stall jmp
+    (mem_read_addr, read_data) = unbundle $ fetch x_op mem micro_stall jmp
     -- Removes Ldrs for which we already know r[a] and r[b] so they don't get microcoded
     rewritten = microfetchRewrite <$> cache <*> (package <$> read_data) 
-    (micro_stall, op) = unbundle $ microcode stall rewritten jumping
+    (micro_stall, f_op) = unbundle $ microcode stall rewritten jumping
     jumping = (\x -> if x == NoJump then False else True) <$> jmp
 
 empty' :: Signal (WriteCache 0 Reg)

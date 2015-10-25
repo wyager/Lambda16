@@ -26,7 +26,7 @@ selfModifying' (Fetched (StLit w (Addr addr)) pc pred) vec = if PC addr `matches
 selfModifying' _ _ = NoJump
 
 selfModifying :: S PC -> S (Fetched X) -> S Jump
-selfModifying pc op =  selfModifying' <$> op <*> pcs -- Using current PC causes loop. I'm just registering after writeback and using a 5-element list. There is probably a better solution. 
+selfModifying pc x_op = selfModifying' <$> x_op <*> pcs -- Using current PC causes loop. I'm just registering after execute and using a 5-element list. There is probably a better solution. 
     where
     pcs = register (repeat 0) pcs'
     pcs' = tally <$> pc <*> pcs
