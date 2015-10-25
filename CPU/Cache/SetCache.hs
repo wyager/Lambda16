@@ -20,8 +20,15 @@ updateWithKey f k v (SetCache assocs) = SetCache $ replace ix assoc' assocs
 update :: (Len n, KnownNat m, Eq k, Hash k n) => (v' -> Maybe v -> Maybe v) -> k -> v' -> SetCache n m k v -> SetCache n m k v
 update f = updateWithKey (const f)
 
-insert :: (Len n, KnownNat m, Eq k, Hash k n) => k -> v -> SetCache n m k v -> SetCache n m k v
-insert k v = update (\v _ -> Just v) k v
+--insert :: (Len n, KnownNat m, Eq k, Hash k n) => k -> v -> SetCache n m k v -> SetCache n m k v
+--insert k v = update (\v _ -> Just v) k v
+
+insert :: forall n m k v v' . (Len n, KnownNat m, Eq k, Hash k n) => k -> v -> SetCache n m k v -> SetCache n m k v
+insert k v (SetCache assocs) = SetCache $ replace ix assoc' assocs
+    where
+    ix = hash k :: BitVector n
+    assoc = assocs !! ix
+    assoc' = Assoc.insert k v assoc
 
 empty :: (Len n, KnownNat m) => SetCache n m k v
 empty = SetCache (repeat Assoc.empty)

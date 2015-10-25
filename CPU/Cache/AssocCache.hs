@@ -17,7 +17,7 @@ lookup (AssocCache entries) k = foldl (<|>) Nothing $ map (matches k) entries
 updateWithKey :: (KnownNat n, Eq k) => (k -> v' -> Maybe v -> Maybe v) -> k -> v' -> AssocCache n k v -> AssocCache n k v
 updateWithKey f k v cache = case f k v (lookup cache k) of
     Nothing -> bunched
-    Just v' -> deleteOldest $ prepend (Just (k,v')) $ bunched
+    Just v' -> prepend (Just (k,v')) $ bunched
     where
     bunched = bunch $ delete k cache 
 
@@ -25,7 +25,7 @@ update :: (KnownNat n, Eq k) => (v' -> Maybe v -> Maybe v) -> k -> v' -> AssocCa
 update f = updateWithKey (const f)
 
 insert :: (KnownNat n, Eq k) => k -> v -> AssocCache n k v -> AssocCache n k v
-insert k v = update (\k _ -> Just v) k v
+insert k v = prepend (Just (k,v)) . bunch . delete k
 
 -- Remove the left-most empty slot and slide everything after it over one
 bunch :: (KnownNat n) => AssocCache n k v -> AssocCache n k v
@@ -33,7 +33,7 @@ bunch (AssocCache vec) = AssocCache vec'
     where
     empty = map isNothing vec
     free = postscanl (||) False empty
-    shifted = tail (vec :< Nothing)
+    shifted = vec <<+ Nothing
     vec' = zipWith3 (\free unslid slid -> if free then slid else unslid) free vec shifted
 
 delete :: (KnownNat n, Eq k) => k -> AssocCache n k v -> AssocCache n k v
@@ -44,8 +44,5 @@ delete a (AssocCache entries) = AssocCache (map delete' entries)
         then Nothing
         else Just (a_old, w)
 
-prepend :: (KnownNat n) => Maybe (k,v) -> AssocCache n k v -> AssocCache (n + 1) k v
-prepend v (AssocCache entries) = AssocCache (v :> entries)
-
-deleteOldest :: (KnownNat n) => AssocCache (n+1) k v -> AssocCache n k v
-deleteOldest (AssocCache entries) = AssocCache (init entries)
+prepend :: (KnownNat n) => Maybe (k,v) -> AssocCache n k v -> AssocCache n k v
+prepend v (AssocCache entries) = AssocCache (v +>> entries)
