@@ -74,8 +74,7 @@ detectMisprediction the_op = case opOf the_op of
     predicted = prediction (predictedOf the_op)
     plus1 = pcOf the_op + 1
 
---dRewrite :: (KnownNat m, KnownNat n) => Fetched R -> Fetched X -> WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched D -> (Bool, Jump, Fetched D)
-dRewrite :: Fetched R -> Fetched X -> WriteCache 8 Addr -> WriteCache 8 Reg -> Jump -> Fetched D -> (Bool, Jump, Fetched D)
+dRewrite :: (KnownNat m, KnownNat n) => Fetched R -> Fetched X -> WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched D -> (Bool, Jump, Fetched D)
 dRewrite r_op x_op mem_cache cache jump op = (stall, jump', op'')
     where 
     (jump', op')  = jmpRewrite jump . generalRewrite mem_cache cache . ldr2Rewrite x_op $ op
