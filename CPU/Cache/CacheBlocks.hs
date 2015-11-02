@@ -1,12 +1,10 @@
-module CPU.Cache.CacheBlocks (Tap, also, regWrites, memWrites, record) where
+module CPU.Cache.CacheBlocks (also, regWrites, memWrites, record) where
 
 import CLaSH.Prelude
 import CPU.Ops (Op(..), Fetched(..))
 import CPU.Defs (S, Reg, Addr, W)
 import CPU.Cache.WriteCache as WC (CachedWrite(..), WriteCache, update, empty, lookup)
 import CPU.Safety.Stages (IsStage, Stage(X))
-
-type Tap a = S a -> S (Maybe W)
 
 regWrites :: IsStage s => Fetched s -> CachedWrite Reg
 regWrites fetched = case opOf fetched of
@@ -30,16 +28,3 @@ record detector x_op = cache'
 
 also :: (KnownNat n, Eq a, IsStage s) => (Fetched s -> CachedWrite a) -> S (Fetched s) -> S (WriteCache n a) -> S (WriteCache n a)
 also detector fetched cache = (update . detector) <$> fetched <*> cache
-
---tap :: (KnownNat n, Eq a) => S (WriteCache n a) -> Tap a
---tap = liftA2 WC.lookup
-
---also' :: (IsStage s, Eq a) => (Fetched s -> CachedWrite a) -> S (Fetched s) -> Tap a -> Tap a
---also' detector fetched search addr = also'' <$> prevResult <*> write <*> addr
---    where
---    prevResult = search addr :: S (Maybe W)
---    write = detector <$> fetched
---    also'' prev NoCachedWrite    _    = prev
---    also'' prev (UnknownWrite a) addr = if a == addr then Nothing else prev
---    also'' prev (KnownWrite a v) addr = if a == addr then Just v  else prev
-

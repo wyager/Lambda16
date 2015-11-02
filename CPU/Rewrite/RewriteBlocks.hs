@@ -83,15 +83,6 @@ dRewrite r_op x_op mem_cache cache jump op = (stall, jump', op'')
 rRewrite :: (KnownNat m, KnownNat n) => WriteCache m Addr -> WriteCache n Reg -> Jump -> Fetched R -> (Jump, Fetched R)
 rRewrite mem_cache cache jump = jmpRewrite jump . generalRewrite mem_cache cache
 
--- We then also need to deal with the writeback result
--- Also dont' forget to put a cache detector on the output of all rewriters, as well as one after writeback
--- The only things that should come out of this are:
--- • Mov
--- • Halt
--- • Nop
--- • StLit
--- • Ldr1Lit (Writeback doesn't have to do anything; it's used by ldr2Rewrite)
--- -- • Jmp -- Nevermind, this gets handled by xRewrite's jmpRewrite
 xSimplify :: W -> (W,W) -> Fetched X -> Fetched X
 xSimplify mem (r1,r2) x_op = x_op {opOf = op'}
     where 

@@ -7,11 +7,7 @@ import CPU.Ops(Op(..), Fetched(..), invalidated)
 import CPU.Fetch.Fetch (fetch)
 import CPU.Safety.Stages (Stage(F))
 
---type Length = 3
-
 type Ix = BitVector 2
-
---data Microvec = Microvec (Vec Length Op) (Index Length) deriving Show
 
 rewriteLen :: Fetched F -> Ix
 rewriteLen fetched = case opOf fetched of
@@ -50,31 +46,3 @@ microcode stall fetched jumping = bundle (fetch_stall, out_fetched)
     rewriting = (not . done) <$> prev_succ
     out_fetched = rewrite <$> current
     fetch_stall = will_rewrite .||. stall
-
---microcode :: S Bool -> S Op -> S Jump -> S (Bool, Op)
---microcode stall input jmp = bundle (rewriting .||. stall, output)
---    where
---    in_vec = microvec <$> input
---    in_instr = current <$> in_vec
---    output = mux rewriting rewritten in_instr
---    in_vec' = regEn (microvec Nop) (not1 stall) in_vec'''
---    in_vec'' = mux (rewriting .&&. not_jumping) (next <$> in_vec') in_vec -- The next iteration of in_vec
---    in_vec''' = mux not_jumping in_vec'' (signal $ microvec Nop) -- If we're jumping, stop rewriting
---    rewriting = ((not . finished) <$> in_vec')
---    rewritten = (current . next) <$> in_vec'
---    not_jumping = (== NoJump) <$> jmp
-
---microvec :: Op -> Microvec
---microvec op = case op of
---    Ldr a b t -> Microvec (Ldr2 t :> Nop :> Ldr1 a b :> Nil) (2)
---    op        -> Microvec (op :> Nop :> Nop :> Nil) (0)
-
---current :: Microvec -> Op
---current (Microvec v i) = v !! i
-
---next :: Microvec -> Microvec
---next m@(Microvec v i) = Microvec v (i-1)
-
---finished :: Microvec -> Bool
---finished (Microvec _ 0) = True
---finished _              = False

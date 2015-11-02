@@ -4,6 +4,7 @@ import CLaSH.Prelude
 import CPU.Defs (Jump(..), PC(..), Addr(..), S)
 import CPU.Ops(Op(..), Fetched(..))
 import CPU.Safety.Stages (Stage(X))
+
 -- We need to keep track of if any instructions in the pipeline were read from the address currently being written to.
 -- If they were, we need to jump to the stored PC + 1.
 
